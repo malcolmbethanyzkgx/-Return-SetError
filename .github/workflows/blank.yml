@@ -1,0 +1,37 @@
+#include <GDIPlus.au3>
+
+_ConvertImage(@ScriptDir & '\Example.jpg', 4) ; Pass an integer as the file format you would like to convert to.
+_ConvertImage(@ScriptDir & '\Example.jpg', '4') ; Pass an integer string as the file format you would like to convert to.
+_ConvertImage(@ScriptDir & '\Example.jpg', 'PNG') ; Pass a valid CLSID as the file format you would like to convert to.
+
+; Version: 1.01. AutoIt: V3.3.8.1
+; Convert an image to a different file format.
+Func _ConvertImage($sFilePath, $vFileType = 1)
+    Local $aFileType[6][2] = [[5, 2], _
+            ['BMP', 'bmp;dib;rle'],['GIF', 'gif'],['JPEG', 'jpg;jpeg;jpe;jfif'],['PNG', 'png'],['TIFF', 'tif;tiff']]
+    If FileExists($sFilePath) = 0 Then
+        Return SetError(1, 0, 0)
+    EndIf
+    If IsInt($vFileType) = 0 And StringIsInt($vFileType) = 0 Then
+        For $i = 1 To $aFileType[0][0]
+            If $aFileType[$i][0] = $vFileType Then
+                $vFileType = $i
+                ExitLoop
+            EndIf
+        Next
+    Else
+        $vFileType = Int($vFileType)
+    EndIf
+    If IsInt($vFileType) = 0 Or $vFileType < 1 Or $vFileType > $aFileType[0][0] Then
+        Return SetError(2, 0, 0)
+    EndIf
+    If Not _GDIPlus_Startup() Then
+        Return SetError(@error, @extended, 0)
+    EndIf
+    Local $iExtension = StringInStr($sFilePath, '.', 2, -1), $sFileString = StringLeft($sFilePath, $iExtension - 1)
+    If StringInStr($aFileType[$vFileType][1], StringMid($sFilePath, $iExtension + 1), 2) = 0 Then
+        Local $hImage = _GDIPlus_ImageLoadFromFile($sFilePath)
+        Local $sCLSID = _GDIPlus_EncodersGetCLSID($aFileType[$vFileType][0])
+        _GDIPlus_ImageSaveToFileEx($hImage, $sFileString & '.' & StringMid($aFileType[$vFileType][1], 1, StringInStr($aFileType[$vFileType][1], ';', 2) - 1), $sCLSID)
+        _GDIPlus_ImageDispose($hImage)
+    EndIf
